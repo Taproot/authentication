@@ -4,20 +4,8 @@ namespace Taproot\Authentication;
 use Symfony\Component\HttpFoundation as Http;
 use IndieAuth;
 use Guzzle;
+use DateTime;
 use Exception;
-
-/**
- * Required/semi-required services:
- *
- * * controllers_factory: default silex factory for an empty RouteCollection
- * * url_generator: a Symfony Routing UrlGenerator-interface-compatible object
- * * logger: a PSR-3-compatible logger
- * * encryption: a laravel-compatible encryption service implementing encrypt() and decrypt() methods
- * * indieauth.url (string): a fallback indieauth server to use if the user doesn’t link to one — typically https://indieauth.com
- * * indieauth.cookiename (optional string): the name of the cookie used to remember the current user. _random will be appended to this for the random state persistance. Defaults to indieauth_token.
- * * indieauth.cookielifetime (optional int): the lifetime, in seconds, for indieauth remember-me cookies to last. Defaults to 60 days.
- * * indieauth.loginredirecturl (optional string): if no “next” POST parameter is given on login attempts, redirect to this URL. If unset, redirects to $request->getHost()
- */
 
 
 /**
@@ -261,9 +249,9 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 		}
 
 		$tokenData = [
-				'dateIssued' => date('Y-m-d H:i:s'),
+				'date_issued' => date(DateTime::W3C),
 				'me' => $auth['me'],
-				'clientId' => $clientId,
+				'client_id' => $clientId,
 				'scope' => isset($auth['scope']) ? $auth['scope'] : '',
 				'nonce' => mt_rand(1000000,pow(2,31))
 		];
@@ -280,6 +268,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 				['Content-type' => 'application/x-www-form-urlencoded']);
 	})->bind('indieauth.token');
 
+	// TODO: this needs to look in auth headers as well as in the request body
 	$app->before(function ($request) use ($app, $dataFromToken) {
 		if ($request->request->has('access_token')) {
 			$app['logger']->info('Authenticating using access token');
@@ -287,9 +276,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 			// This request is presumably coming from an app which the user has authorized with some access to this site.
 			$tokenStr = $request->request->get('access_token');
 			try {
-				// $token also contains information e.g. the scopes the current user has. Because only the owner can post
-				// on Taproot, currently posting permissions are still controlled by who the person is, not (yet) the
-				// scopes they have granted the client app.
+				// $token also contains information e.g. the scopes the current user has.
 				// Client app filtering could also be done here.
 
 				$token = $dataFromToken($tokenStr);
