@@ -1,6 +1,6 @@
 # taproot/authentication
 
-A library for quickly adding full-blown indieauth/web sign-in support to Silex/Symfony applications.
+A library for quickly adding full-blown [indieauth](http://indieauth.com)/web sign-in support to Silex/Symfony applications. Built on top of [indieweb/mention-client](https://github.com/indieweb/mention-client-php).
 
 ## Installation
 
@@ -15,11 +15,11 @@ taproot/authentication exposes two functions, which, given your Silex `$app`, se
 Both functions require several services on `$app`:
 
 * `url_generator`: a Symfony Routing UrlGeneratorInterface instance, e.g. one provided by a UrlGeneratorServiceProvider in Silex.
-* `encryption`: an object implementing two methods, `string encrypt(mixed $data)` and `mixed decrypt(string $token)` capable of encrypting and decrypting arbitrary data. Usually an instance of `Illuminate\Encryption\Encrypter`
+* `encryption`: an object implementing two methods, `string encrypt(mixed $data)` and `mixed decrypt(string $token)` capable of encrypting and decrypting arbitrary data. Usually an instance of `[Illuminate\Encryption\Encrypter](https://github.com/illuminate/encryption)`
 
 Both functions will optionally make use of the following services, but do not require them to function:
 
-* `logger`: a PSR-3-compatible logging interface
+* `logger`: a [PSR-3](http://www.php-fig.org/psr/psr-3/)-compatible logging interface
 
 ### Taproot\Authentication\client()
 
@@ -90,7 +90,7 @@ function ($request) {
 
 ### Taproot\Authentication\server()
 
-`server()` creates event handlers and routes implementing a ticket provider and resource server (i.e. micropub endpoint which client apps can make posts to on behalf of users).
+`server()` creates event handlers and routes implementing a ticket provider and resource server (i.e. [micropub](http://indiewebcamp.com/micropub) endpoint which client apps can make posts to on behalf of users).
 
 It returns a RouteCollection ready to be mounted wherever you want, with the following route:
 
@@ -150,6 +150,8 @@ Yes it can! In fact before this code was separated into client and server code w
 ### Can this be used outside of Silex?
 
 It works best with silex but with some small modifications might be easily adapted to any project using Symfony HTTP Kernel — if you’re interested in getting this working, raise an issue.
+
+Alternatively, take a look at [indieweb/mention-client](https://github.com/indieweb/mention-client-php), [Aaron Parecki](https://aaronparecki.com)’s excellent library of which taproot/authentication is merely a thin wrapper.
 
 ## Contributions + Testing
 
