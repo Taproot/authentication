@@ -66,7 +66,7 @@ function ($request) {
     $token = $request->attributes->get('indieauth.client.token', null);
     if ($token !== null) {
       // User is logged in as $token['me']
-      if (!empty($token['access_token'] and !empty($token['micropub_endpoint'])) {
+      if (!empty($token['access_token']) and !empty($token['micropub_endpoint'])) {
         // The user has granted this app privileges detailed in $token['scope'], which can be carried out by sending
         // requests to $token['micropub_endpoint'] with $token['access_token']
         // Now you might check that the “post” scope is granted, and create some new content on their site (pseudocode):
