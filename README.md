@@ -1,6 +1,6 @@
 # taproot/authentication
 
-A library for quickly adding full-blown [indieauth](http://indieauth.com)/web sign-in support to Silex/Symfony applications. Built on top of [indieweb/mention-client](https://github.com/indieweb/mention-client-php).
+A library for quickly adding full-blown [indieauth](http://indieauth.com)/web sign-in support to Silex/Symfony applications. Built on top of [indieweb/indieauth-client](https://github.com/indieweb/indieauth-client-php).
 
 ## Installation
 
@@ -151,7 +151,7 @@ Yes it can! In fact before this code was separated into client and server code w
 
 It works best with silex but with some small modifications might be easily adapted to any project using Symfony HTTP Kernel — if you’re interested in getting this working, raise an issue.
 
-Alternatively, take a look at [indieweb/mention-client](https://github.com/indieweb/mention-client-php), [Aaron Parecki](https://aaronparecki.com)’s excellent library of which taproot/authentication is merely a thin wrapper.
+Alternatively, take a look at [indieweb/indieauth-client](https://github.com/indieweb/indieauth-client-php), [Aaron Parecki](https://aaronparecki.com)’s excellent library of which taproot/authentication is merely a thin wrapper.
 
 ## Contributions + Testing
 
