@@ -64,13 +64,18 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 	$cookieLifetime = !empty($app['indieauth.cookielifetime']) ? $app['indieauth.cookielifetime'] : 60 * 60 * 24 * 60;
 	$cookieName = !empty($app['indieauth.cookiename']) ? $app['indieauth.cookiename'] : 'indieauth_token';
 
+	$clientIdForRequest = function  (Http\Request $request) use ($app) {
+		// If no explicit client ID is set, use the domain name of this site.
+		return !empty($app['indieauth.clientid']) ? $app['indieauth.clientid'] : $request->getHttpHost();
+	};
+
 	$redirectUrlForRequest = function (Http\Request $request) use ($app) {
 		// If no default login redirect URL is set (it can be reset on a request-by-request basis by setting the “next” parameter), default to the homepage
 		$defaultLoginRedirectUrl = !empty($app['indieauth.loginredirecturl']) ? $app['indieauth.loginredirecturl'] : "{$request->getScheme()}://{$request->getHttpHost()}";
 		return $request->request->get('next', $defaultLoginRedirectUrl);
 	};
 
-	$auth->post('/login/', function (Http\Request $request) use ($app, $cookieName, $redirectUrlForRequest) {
+	$auth->post('/login/', function (Http\Request $request) use ($app, $cookieName, $redirectUrlForRequest, $clientIdForRequest) {
 		$me = $request->request->get('me');
 
 		$next = $redirectUrlForRequest($request);
@@ -94,7 +99,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			$authorizationEndpoint,
 			$me,
 			$redirectEndpoint,
-			$app['domain'],
+			$clientIdForRequest($request),
 			$random,
 			$scope);
 		$response = $app->redirect($authorizationUrl);
@@ -104,7 +109,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		return $response;
 	})->bind('indieauth.login');
 
-	$auth->get('/authorize/', function (Http\Request $request) use ($app, $dataToCookie, $cookieName, $cookieLifetime, $redirectUrlForRequest) {
+	$auth->get('/authorize/', function (Http\Request $request) use ($app, $dataToCookie, $cookieName, $cookieLifetime, $redirectUrlForRequest, $clientIdForRequest) {
 		$random = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_random"));
 		$me = $request->query->get('me');
 		$state = $request->query->get('state');
@@ -118,7 +123,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		}
 		$tokenEndpoint = IndieAuth\Client::discoverTokenEndpoint($me);
 		$redirectUrl = $app['url_generator']->generate('indieauth.authorize', [], true);
-		$token = IndieAuth\Client::getAccessToken($tokenEndpoint, $code, $me, $redirectUrl, $app['domain'], $state);
+		$token = IndieAuth\Client::getAccessToken($tokenEndpoint, $code, $me, $redirectUrl, $clientIdForRequest($request), $state);
 		$token['micropub_endpoint'] = IndieAuth\Client::discoverMicropubEndpoint($me);
 
 		$app['logger']->info("Indieauth: Got token, discovered micropub endpoint", ['token' => $token]);

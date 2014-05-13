@@ -86,7 +86,8 @@ function ($request) {
 * `indieauth.url`: if a user tries to log in but an authorization server can’t be found, fall back to using this server. Defaults to 'https://indieauth.com'
 * `indieauth.cookiename`: the name of the cookie used to remember the current user. _random will be appended to this for the random state persistance. Defaults to 'indieauth_token'.
 * `indieauth.cookielifetime`: the lifetime, in seconds, for indieauth remember-me cookies to last. Defaults to 60 days.
-* `indieauth.loginredirecturl`: if no “next” POST parameter is given on login attempts, redirect to this URL. If unset, redirects to $request->getHost()
+* `indieauth.loginredirecturl`: if no “next” POST parameter is given on login attempts, redirect to this URL. If unset, redirects to `$request->getHttpHost()`
+* `indieauth.clientid`: the string to use to identify this indieauth app. If unset, defaults to `$request->getHttpHost()`
 
 ### Taproot\Authentication\server()
 
