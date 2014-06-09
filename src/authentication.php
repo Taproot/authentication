@@ -84,14 +84,14 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			// TODO: better error handling, although in practical cases this will never happen.
 			return $app->redirect($next);
 		}
-		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint($me);
+		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint(ensureUrlHasHttp($me));
 		if ($authorizationEndpoint === false) {
 			// If the current user has no authorization endpoint set, they are using the basic indieauth flow.
 			$authorizationEndpoint = rtrim($app['indieauth.url'], '/') . '/auth';
 			return $app->redirect("{$authorizationEndpoint}?me={$me}&redirect_url={$next}");
 		}
 		// As more scopes become defined, this will need to be expanded + probably made configurable.
-		$micropubEndpoint = IndieAuth\Client::discoverMicropubEndpoint($me);
+		$micropubEndpoint = IndieAuth\Client::discoverMicropubEndpoint(ensureUrlHasHttp($me));
 		$scope = !empty($micropubEndpoint) ? 'post' : '';
 		$random = mt_rand(1000000,pow(2,31));
 		$redirectEndpoint = $app['url_generator']->generate('indieauth.authorize', [], true);
@@ -124,7 +124,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		$tokenEndpoint = IndieAuth\Client::discoverTokenEndpoint($me);
 		$redirectUrl = $app['url_generator']->generate('indieauth.authorize', [], true);
 		$token = IndieAuth\Client::getAccessToken($tokenEndpoint, $code, $me, $redirectUrl, $clientIdForRequest($request), $state);
-		$token['micropub_endpoint'] = IndieAuth\Client::discoverMicropubEndpoint($me);
+		$token['micropub_endpoint'] = IndieAuth\Client::discoverMicropubEndpoint(ensureUrlHasHttp($me));
 
 		$app['logger']->info("Indieauth: Got token, discovered micropub endpoint", ['token' => $token]);
 
@@ -236,7 +236,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 		$state = $f->get('state');
 
 		// TODO: handle this being false.
-		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint($me);
+		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint(ensureUrlHasHttp($me));
 		$auth = IndieAuth\Client::verifyIndieAuthCode(
 				$authorizationEndpoint,
 				$code,
@@ -298,4 +298,23 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 	});
 
 	return $auth;
+}
+
+// Partially borrowed from https://github.com/tantek/cassis/blob/master/cassis.js — thanks tantek.com!
+function ensureUrlHasHttp($wa) {
+	if (!$wa ||
+			(substr($wa, 0, 7) === 'http://') ||
+			(substr($wa, 0, 8) === 'https://') ||
+			(substr($wa, 0, 6) === 'irc://')) {
+		return $wa;
+	}
+
+	if ((substr($wa, 0, 7) === 'Http://') ||
+			(substr($wa, 0, 8) === 'Https://')) {
+		// handle iOS4 overcapitalization of input entries
+		$wa[0] = 'h';
+		return $wa;
+	}
+
+	return "http://{$wa}";
 }
