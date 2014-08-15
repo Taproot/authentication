@@ -88,7 +88,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		if ($authorizationEndpoint === false) {
 			// If the current user has no authorization endpoint set, they are using the basic indieauth flow.
 			$authorizationEndpoint = rtrim($app['indieauth.url'], '/') . '/auth';
-			return $app->redirect("{$authorizationEndpoint}?me={$me}&redirect_url={$next}");
+			return $app->redirect("{$authorizationEndpoint}?me={$me}&redirect_uri={$next}");
 		}
 		// As more scopes become defined, this will need to be expanded + probably made configurable.
 		$micropubEndpoint = IndieAuth\Client::discoverMicropubEndpoint(ensureUrlHasHttp($me));
