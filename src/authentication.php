@@ -176,7 +176,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			$client = new Guzzle\Http\Client($app['indieauth.url']);
 			try {
 				$response = $client->get('session?token=' . $request->query->get('token'))->send();
-				$basicToken = json_decode($response->getBody(), true);
+				$basicToken = json_decode($response->getBody(true), true);
 				$request->attributes->set('indieauth.client.token', $basicToken);
 			} catch (Guzzle\Common\Exception\GuzzleException $e) {
 				$app->logger->warning('Authenticating user with indieauth.com failed: ' . $e->getMessage());
