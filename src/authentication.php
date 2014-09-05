@@ -103,8 +103,8 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			$random,
 			$scope);
 		$response = $app->redirect($authorizationUrl);
-		// Retain random state for five minutes.
-		$cookie = new Http\Cookie("{$cookieName}_random", $app['encryption']->encrypt($random), time() + 60 * 5);
+		// Retain random state for five minutes in secure, HTTP-only cookie.
+		$cookie = new Http\Cookie("{$cookieName}_random", $app['encryption']->encrypt($random), time() + 60 * 5, null, null, true, true);
 		$response->headers->setCookie($cookie);
 		return $response;
 	})->bind('indieauth.login');
@@ -129,7 +129,8 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		$app['logger']->info("Indieauth: Got token, discovered micropub endpoint", ['token' => $token]);
 
 		$response = $app->redirect($redirectUrlForRequest($request));
-		$tokenCookie = new Http\Cookie($cookieName, $dataToCookie($token), time() + $cookieLifetime);
+		// Store token data in secure, HTTP-only session cookie.
+		$tokenCookie = new Http\Cookie($cookieName, $dataToCookie($token), time() + $cookieLifetime, null, null, true, true);
 		$response->headers->setCookie($tokenCookie);
 		return $response;
 	})->bind('indieauth.authorize');
