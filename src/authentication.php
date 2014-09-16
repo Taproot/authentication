@@ -180,7 +180,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 				$basicToken = json_decode($response->getBody(true), true);
 				$request->attributes->set('indieauth.client.token', $basicToken);
 			} catch (Guzzle\Common\Exception\GuzzleException $e) {
-				$app->logger->warning('Authenticating user with indieauth.com failed: ' . $e->getMessage());
+				$app['logger']->warning('Authenticating user with indieauth.com failed: ' . $e->getMessage());
 			}
 		}
 	});
