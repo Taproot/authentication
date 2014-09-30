@@ -63,6 +63,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 	// If no cookie lifetime is set, default to 60 days.
 	$cookieLifetime = !empty($app['indieauth.cookielifetime']) ? $app['indieauth.cookielifetime'] : 60 * 60 * 24 * 60;
 	$cookieName = !empty($app['indieauth.cookiename']) ? $app['indieauth.cookiename'] : 'indieauth_token';
+	$secureCookies = !empty($app['indieauth.securecookies']) ? $app['indieauth.securecookies'] : true;
 
 	$clientIdForRequest = function  (Http\Request $request) use ($app) {
 		// If no explicit client ID is set, use the domain name of this site.
@@ -75,7 +76,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		return $request->request->get('next', $defaultLoginRedirectUrl);
 	};
 
-	$auth->post('/login/', function (Http\Request $request) use ($app, $cookieName, $redirectUrlForRequest, $clientIdForRequest) {
+	$auth->post('/login/', function (Http\Request $request) use ($app, $cookieName, $redirectUrlForRequest, $clientIdForRequest, $secureCookies) {
 		$me = $request->request->get('me');
 
 		$next = $redirectUrlForRequest($request);
@@ -104,12 +105,12 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			$scope);
 		$response = $app->redirect($authorizationUrl);
 		// Retain random state for five minutes in secure, HTTP-only cookie.
-		$cookie = new Http\Cookie("{$cookieName}_random", $app['encryption']->encrypt($random), time() + 60 * 5, null, null, true, true);
+		$cookie = new Http\Cookie("{$cookieName}_random", $app['encryption']->encrypt($random), time() + 60 * 5, null, null, $secureCookies, true);
 		$response->headers->setCookie($cookie);
 		return $response;
 	})->bind('indieauth.login');
 
-	$auth->get('/authorize/', function (Http\Request $request) use ($app, $dataToCookie, $cookieName, $cookieLifetime, $redirectUrlForRequest, $clientIdForRequest) {
+	$auth->get('/authorize/', function (Http\Request $request) use ($app, $dataToCookie, $cookieName, $cookieLifetime, $redirectUrlForRequest, $clientIdForRequest, $secureCookies) {
 		$random = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_random"));
 		$me = $request->query->get('me');
 		$state = $request->query->get('state');
@@ -130,7 +131,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 
 		$response = $app->redirect($redirectUrlForRequest($request));
 		// Store token data in secure, HTTP-only session cookie.
-		$tokenCookie = new Http\Cookie($cookieName, $dataToCookie($token), time() + $cookieLifetime, null, null, true, true);
+		$tokenCookie = new Http\Cookie($cookieName, $dataToCookie($token), time() + $cookieLifetime, null, null, $secureCookies, true);
 		$response->headers->setCookie($tokenCookie);
 		return $response;
 	})->bind('indieauth.authorize');
@@ -185,10 +186,10 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		}
 	});
 
-	$app->after(function (Http\Request $request, Http\Response $response) use ($app, $dataToCookie, $cookieName, $cookieLifetime) {
+	$app->after(function (Http\Request $request, Http\Response $response) use ($app, $dataToCookie, $cookieName, $cookieLifetime, $secureCookies) {
 		// If the request is a basic-flow indieauth login request, set a remember-me cookie.
 		if ($request->query->has('token') and $request->attributes->has('indieauth.client.token') and !$request->attributes->get('indieauth.islogoutrequest', false)) {
-			$tokenCookie = new Http\Cookie($cookieName, $dataToCookie($request->attributes->get('indieauth.client.token')), time() + $cookieLifetime);
+			$tokenCookie = new Http\Cookie($cookieName, $dataToCookie($request->attributes->get('indieauth.client.token')), time() + $cookieLifetime, null, null, $secureCookies, true);
 			$response->headers->setCookie($tokenCookie);
 		}
 	});
