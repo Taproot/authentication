@@ -63,7 +63,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 	// If no cookie lifetime is set, default to 60 days.
 	$cookieLifetime = !empty($app['indieauth.cookielifetime']) ? $app['indieauth.cookielifetime'] : 60 * 60 * 24 * 60;
 	$cookieName = !empty($app['indieauth.cookiename']) ? $app['indieauth.cookiename'] : 'indieauth_token';
-	$secureCookies = !empty($app['indieauth.securecookies']) ? $app['indieauth.securecookies'] : true;
+	$secureCookies = isset($app['indieauth.securecookies']) ? $app['indieauth.securecookies'] : true;
 
 	$clientIdForRequest = function  (Http\Request $request) use ($app) {
 		// If no explicit client ID is set, use the domain name of this site.
