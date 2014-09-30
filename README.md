@@ -81,6 +81,8 @@ function ($request) {
 };
 ```
 
+To programatically log a user out, call `$app['indieauth']->logoutResponse($response)` before sending the response.
+
 `client()` doesn’t require any services other than the ones detailed above, but defaults can be overridden by the following services:
 
 * `indieauth.url`: if a user tries to log in but an authorization server can’t be found, fall back to using this server. Defaults to 'https://indieauth.com'

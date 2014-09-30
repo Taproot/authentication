@@ -2,10 +2,26 @@
 namespace Taproot\Authentication;
 
 use Symfony\Component\HttpFoundation as Http;
+use Symfony\Component\HttpKernel;
 use IndieAuth;
 use Guzzle;
 use DateTime;
 use Exception;
+
+
+class IndieauthHelpers {
+	protected $app;
+
+	public function __construct($app) {
+		$this->app = $app;
+	}
+
+	public function logoutResponse(Http\Response $response) {
+		$cookieName = !empty($app['indieauth.cookiename']) ? $app['indieauth.cookiename'] : 'indieauth_token';
+		$response->headers->setCookie(new Http\Cookie($cookieName, '', 0));
+		return $response;
+	}
+}
 
 
 /**
@@ -59,6 +75,8 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			return $app['encryption']->decrypt($token);
 		};
 	}
+
+	$app['indieauth'] = new IndieauthHelpers($app);
 
 	// If no cookie lifetime is set, default to 60 days.
 	$cookieLifetime = !empty($app['indieauth.cookielifetime']) ? $app['indieauth.cookielifetime'] : 60 * 60 * 24 * 60;
@@ -141,7 +159,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		// from setting remember-me cookies.
 		$request->attributes->set('indieauth.islogoutrequest', true);
 		$response = $app->redirect($redirectUrlForRequest($request));
-		$response->headers->setCookie(new Http\Cookie($cookieName, '', 0));
+		$app['indieauth']->logoutResponse($response);
 		return $response;
 	})->bind('logout');
 
