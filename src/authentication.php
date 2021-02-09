@@ -1,6 +1,7 @@
 <?php
 namespace Taproot\Authentication;
 
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\HttpFoundation as Http;
 use Symfony\Component\HttpKernel;
 use IndieAuth;
@@ -113,7 +114,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		$micropubEndpoint = IndieAuth\Client::discoverMicropubEndpoint(ensureUrlHasHttp($me));
 		$scope = !empty($micropubEndpoint) ? 'post' : '';
 		$random = mt_rand(1000000,pow(2,31));
-		$redirectEndpoint = $app['url_generator']->generate('indieauth.authorize', [], true);
+		$redirectEndpoint = $app['url_generator']->generate('indieauth.authorize', [], UrlGeneratorInterface::ABSOLUTE_URL);
 		$authorizationUrl = IndieAuth\Client::buildAuthorizationUrl(
 			$authorizationEndpoint,
 			$me,

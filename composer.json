@@ -10,7 +10,8 @@
 	"require": {
 		"indieauth/client": "*",
 		"guzzle/guzzle": "*",
-		"psr/log": "*"
+		"psr/log": "*",
+		"symfony/routing": "~2.3|3.0.*"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "3.*",
