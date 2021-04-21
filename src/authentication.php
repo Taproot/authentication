@@ -96,7 +96,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 	};
 
 	$auth->post('/login/', function (Http\Request $request) use ($app, $cookieName, $redirectUrlForRequest, $clientIdForRequest, $secureCookies) {
-		IndieAuth\Client::normalizeMeURL($request->request->get('me'));
+		$me = IndieAuth\Client::normalizeMeURL($request->request->get('me'));
 
 		$next = $redirectUrlForRequest($request);
 
