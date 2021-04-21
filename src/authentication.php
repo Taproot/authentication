@@ -265,8 +265,10 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 	}
 
 	$auth->post('/token/', function (Http\Request $request) use ($app, $dataToToken) {
+		// Assume that the app owner is the only possible me parameter value.
+		$me = $app['owner']['url'];
+
 		$f = $request->request;
-		$me = IndieAuth\Client::normalizeMeURL($f->get('me'));
 		$grantType = $f->get('grant_type'); // Should be authorization_code
 		$code = $f->get('code');
 		$clientId = $f->get('client_id');
