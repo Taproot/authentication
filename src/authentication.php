@@ -280,7 +280,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 			'redirect_uri' => $redirectUri,
 			'client_id' => $clientId,
 			'code_verifier' => $codeVerifier
-		]);
+		])['response'];
 
 		if (isset($auth['error'])) {
 			$app['logger']->warning('Got an error whilst verifying an authorization token', [
