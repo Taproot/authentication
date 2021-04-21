@@ -94,7 +94,17 @@ To programatically log a user out, call `$app['indieauth']->logoutResponse($resp
 
 ### Taproot\Authentication\server()
 
-`server()` creates event handlers and routes implementing a ticket provider and resource server (i.e. [micropub](http://indiewebcamp.com/micropub) endpoint which client apps can make posts to on behalf of users).
+`server()` creates event handlers and routes implementing a token provider and resource server (i.e. [micropub](http://indiewebcamp.com/micropub) endpoint which client apps can make posts to on behalf of users).
+
+The token endpoint only supports a single user logging in. Their URL must be defined in `$app['owner']['url']`. It’s suggested to use `$app['owner']` as a place for storing information about the site owner, and for authorization purposes e.g.
+
+```php
+$app['owner'] = [
+    'name' => 'Owner Name',
+    'url' => 'https://example.com',  // Only this field is required for the token endpoint to function.
+    'photo' => 'https://example.com/photo.jpg'
+];
+```
 
 It returns a RouteCollection ready to be mounted wherever you want, with the following route:
 
