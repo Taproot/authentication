@@ -285,7 +285,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 		$app['logger']->info('Received response from IndieAuth\Client::exchangeAuthorizationCode', [
 			'auth_endpoint' => $authorizationEndpoint,
 			'response' => $auth
-		])
+		]);
 
 		$authResponse = $auth['response'];
 
