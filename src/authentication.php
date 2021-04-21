@@ -141,7 +141,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		$storedState = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_state"));
 		$storedCodeVerifier = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_code_verifier"));
 
-		$me = IndieAuth\Client::normalizeURL($request->query->get('me'));
+		$me = IndieAuth\Client::normalizeMeURL($request->query->get('me'));
 		$state = $request->query->get('state');
 		$code = $request->query->get('code');
 
@@ -268,7 +268,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 		$storedCodeVerifier = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_code_verifier"));
 
 		$f = $request->request;
-		$me = IndieAuth\Client::normalizeURL($f->get('me'));
+		$me = IndieAuth\Client::normalizeMeURL($f->get('me'));
 		$grantType = $f->get('grant_type'); // Should be authorization_code
 		$code = $f->get('code');
 		$clientId = $f->get('client_id');
