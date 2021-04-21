@@ -49,7 +49,7 @@ class IndieauthHelpers {
  *         // requests to $token['micropub_endpoint'] with $token['access_token']
  *         // Now you might check that the “post” scope is granted, and create some new content on their site (pseudocode):
  *         if (in_array('post', explode($scope, ' '))) {
- *           micrpub_post($token['micropub_endpoint'], $token['access_token'], $postDetails);
+ *           micropub_post($token['micropub_endpoint'], $token['access_token'], $postDetails);
  *         }
  *       } else {
  *         // The user has logged in using the basic indieauth flow — we know that they’re authenticated as $token['me'],
@@ -96,7 +96,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 	};
 
 	$auth->post('/login/', function (Http\Request $request) use ($app, $cookieName, $redirectUrlForRequest, $clientIdForRequest, $secureCookies) {
-		$me = $request->request->get('me');
+		IndieAuth\Client::normalizeMeURL($request->request->get('me'));
 
 		$next = $redirectUrlForRequest($request);
 
@@ -104,37 +104,48 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			// TODO: better error handling, although in practical cases this will never happen.
 			return $app->redirect($next);
 		}
-		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint(ensureUrlHasHttp($me));
+		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint($me);
 		if ($authorizationEndpoint === false) {
 			// If the current user has no authorization endpoint set, they are using the basic indieauth flow.
 			$authorizationEndpoint = rtrim($app['indieauth.url'], '/') . '/auth';
 			return $app->redirect("{$authorizationEndpoint}?me={$me}&redirect_uri={$next}");
 		}
 		// As more scopes become defined, this will need to be expanded + probably made configurable.
-		$micropubEndpoint = IndieAuth\Client::discoverMicropubEndpoint(ensureUrlHasHttp($me));
+		$micropubEndpoint = IndieAuth\Client::discoverMicropubEndpoint($me);
 		$scope = !empty($micropubEndpoint) ? 'post' : '';
-		$random = mt_rand(1000000,pow(2,31));
+		$state = IndieAuth\Client::generateStateParameter();
+		$codeVerifier = IndieAuth\Client::generatePKCECodeVerifier();
 		$redirectEndpoint = $app['url_generator']->generate('indieauth.authorize', [], UrlGeneratorInterface::ABSOLUTE_URL);
-		$authorizationUrl = IndieAuth\Client::buildAuthorizationUrl(
-			$authorizationEndpoint,
-			$me,
-			$redirectEndpoint,
-			$clientIdForRequest($request),
-			$random,
-			$scope);
+		$authorizationUrl = IndieAuth\Client::buildAuthorizationURL($authorizationEndpoint, [
+			'me' => $me,
+			'redirect_uri' => $redirectEndpoint,
+			'client_id' => $clientIdForRequest($request),
+			'state' => $state,
+			'code_verifier' => $codeVerifier,
+			'scope' => $scope
+		]);
+		
+		// Redirect the user to their authorization endpoint.
 		$response = $app->redirect($authorizationUrl);
-		// Retain random state for five minutes in secure, HTTP-only cookie.
-		$cookie = new Http\Cookie("{$cookieName}_random", $app['encryption']->encrypt($random), time() + 60 * 5, null, null, $secureCookies, true);
-		$response->headers->setCookie($cookie);
+
+		// Retain random state and code verifier for five minutes in secure, HTTP-only cookie.
+		$stateCookie = new Http\Cookie("{$cookieName}_state", $app['encryption']->encrypt($state), time() + 60 * 5, null, null, $secureCookies, true);
+		$verifierCookie = new Http\Cookie("{$cookieName}_code_verifier", $app['encryption']->encrypt($codeVerifier), time() + 60 * 5, null, null, $secureCookies, true);
+		$response->headers->setCookie($stateCookie);
+		$response->headers->setCookie($verifierCookie);
+
 		return $response;
 	})->bind('indieauth.login');
 
 	$auth->get('/authorize/', function (Http\Request $request) use ($app, $dataToCookie, $cookieName, $cookieLifetime, $redirectUrlForRequest, $clientIdForRequest, $secureCookies) {
-		$random = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_random"));
-		$me = $request->query->get('me');
+		$storedState = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_state"));
+		$storedCodeVerifier = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_code_verifier"));
+
+		$me = IndieAuth\Client::normalizeURL($request->query->get('me'));
 		$state = $request->query->get('state');
 		$code = $request->query->get('code');
-		if ($state != $random) {
+
+		if ($state != $storedState) {
 			$app['logger']->info('Authentication failed as state didn’t match random in cookie', [
 				'state' => $state,
 				'cookie.random' => $random
@@ -143,9 +154,14 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 		}
 		$tokenEndpoint = IndieAuth\Client::discoverTokenEndpoint($me);
 		$redirectUrl = $app['url_generator']->generate('indieauth.authorize', [], true);
-		$token = IndieAuth\Client::getAccessToken($tokenEndpoint, $code, $me, $redirectUrl, $clientIdForRequest($request), $state);
-		$token['micropub_endpoint'] = IndieAuth\Client::discoverMicropubEndpoint(ensureUrlHasHttp($me));
 
+		$token = IndieAuth\Client::exchangeAuthorizationCode($tokenEndpoint, [
+			'code' => $code,
+			'redirect_uri' => $redirectUri,
+			'client_id' => $clientIdForRequest($request),
+			'code_verifier' => $storedCodeVerifier
+		])['response'];
+		$token['micropub_endpoint'] = IndieAuth\Client::discoverMicropubEndpoint($me);
 		$app['logger']->info("Indieauth: Got token, discovered micropub endpoint", ['token' => $token]);
 
 		$response = $app->redirect($redirectUrlForRequest($request));
@@ -200,7 +216,7 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 				$basicToken = json_decode($response->getBody(true), true);
 				$request->attributes->set('indieauth.client.token', $basicToken);
 			} catch (Guzzle\Common\Exception\GuzzleException $e) {
-				$app['logger']->warning('Authenticating user with indieauth.com failed: ' . $e->getMessage());
+				$app['logger']->warning('Authenticating user with the basic indieauth flow via ' . $app['indieauth.url'] . ' failed: ' . $e->getMessage());
 			}
 		}
 	});
@@ -249,22 +265,24 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 	}
 
 	$auth->post('/token/', function (Http\Request $request) use ($app, $dataToToken) {
+		$storedCodeVerifier = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_code_verifier"));
+
 		$f = $request->request;
-		$me = $f->get('me');
+		$me = IndieAuth\Client::normalizeURL($f->get('me'));
+		$grantType = $f->get('grant_type'); // Should be authorization_code
 		$code = $f->get('code');
 		$clientId = $f->get('client_id');
 		$redirectUri = $f->get('redirect_uri');
 		$state = $f->get('state');
 
 		// TODO: handle this being false.
-		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint(ensureUrlHasHttp($me));
-		$auth = IndieAuth\Client::verifyIndieAuthCode(
-				$authorizationEndpoint,
-				$code,
-				$me,
-				$redirectUri,
-				$clientId,
-				$state);
+		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint($me);
+		$auth = IndieAuth\Client::exchangeAuthorizationCode($authorizationEndpoint, [
+			'code' => $code,
+			'redirect_uri' => $redirectUri,
+			'client_id' => $clientId,
+			'code_verifier' => $storedCodeVerifier
+		]);
 
 		if (isset($auth['error'])) {
 			$app['logger']->warning('Got an error whilst verifying an authorization token', [
@@ -285,13 +303,14 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 		$token = $dataToToken($tokenData);
 
 		return Http\Response::create(
-				http_build_query([
+				json_encode([
 						'me' => $tokenData['me'],
 						'scope' => $tokenData['scope'],
-						'access_token' => $token
+						'access_token' => $token,
+						'token_type' => 'Bearer'
 				]),
 				200,
-				['Content-type' => 'application/x-www-form-urlencoded']);
+				['Content-type' => 'application/json']);
 	})->bind('indieauth.token');
 
 	// TODO: this needs to look in auth headers as well as in the request body
