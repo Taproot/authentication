@@ -265,16 +265,13 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 	}
 
 	$auth->post('/token/', function (Http\Request $request) use ($app, $dataToToken) {
-		$app['logger']->info('Found encrypted code_verifer cookie', ['content' => $request->cookies->get("{$cookieName}_code_verifier")]);
-		$storedCodeVerifier = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_code_verifier"));
-
 		$f = $request->request;
 		$me = IndieAuth\Client::normalizeMeURL($f->get('me'));
 		$grantType = $f->get('grant_type'); // Should be authorization_code
 		$code = $f->get('code');
 		$clientId = $f->get('client_id');
 		$redirectUri = $f->get('redirect_uri');
-		$state = $f->get('state');
+		$codeVerifier = $f->get('code_verifier');
 
 		// TODO: handle this being false.
 		$authorizationEndpoint = IndieAuth\Client::discoverAuthorizationEndpoint($me);
@@ -282,7 +279,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 			'code' => $code,
 			'redirect_uri' => $redirectUri,
 			'client_id' => $clientId,
-			'code_verifier' => $storedCodeVerifier
+			'code_verifier' => $codeVerifier
 		]);
 
 		if (isset($auth['error'])) {
