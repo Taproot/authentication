@@ -265,7 +265,7 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 	}
 
 	$auth->post('/token/', function (Http\Request $request) use ($app, $dataToToken) {
-		$app['logger']->info('Found encrypted code_verifer cookie', ['content' => $request->cookies->get("{$cookieName}_code_verifier")])
+		$app['logger']->info('Found encrypted code_verifer cookie', ['content' => $request->cookies->get("{$cookieName}_code_verifier")]);
 		$storedCodeVerifier = $app['encryption']->decrypt($request->cookies->get("{$cookieName}_code_verifier"));
 
 		$f = $request->request;
