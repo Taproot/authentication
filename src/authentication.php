@@ -280,21 +280,28 @@ function server($app, $dataToToken = null, $dataFromToken = null) {
 			'redirect_uri' => $redirectUri,
 			'client_id' => $clientId,
 			'code_verifier' => $codeVerifier
-		])['response'];
+		]);
+		
+		$app['logger']->info('Received response from IndieAuth\Client::exchangeAuthorizationCode', [
+			'auth_endpoint' => $authorizationEndpoint,
+			'response' => $auth
+		])
 
-		if (isset($auth['error'])) {
+		$authResponse = $auth['response'];
+
+		if (isset($authResponse['error'])) {
 			$app['logger']->warning('Got an error whilst verifying an authorization token', [
-					'error' => $auth['error'],
-					'description' => $auth['error_description'],
+					'error' => $authResponse['error'],
+					'description' => $authResponse['error_description'],
 					'authorizationEndpoint' => $authorizationEndpoint
 			]);
 		}
 
 		$tokenData = [
 				'date_issued' => date(DateTime::W3C),
-				'me' => $auth['me'],
+				'me' => $authResponse['me'],
 				'client_id' => $clientId,
-				'scope' => isset($auth['scope']) ? $auth['scope'] : '',
+				'scope' => isset($authResponse['scope']) ? $authResponse['scope'] : '',
 				'nonce' => mt_rand(1000000,pow(2,31))
 		];
 
