@@ -153,11 +153,11 @@ function client($app, $dataToCookie = null, $dataFromCookie = null) {
 			return $app->redirect('/');
 		}
 		$tokenEndpoint = IndieAuth\Client::discoverTokenEndpoint($me);
-		$redirectUrl = $app['url_generator']->generate('indieauth.authorize', [], true);
+		$redirectUrl = $app['url_generator']->generate('indieauth.authorize', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
 		$token = IndieAuth\Client::exchangeAuthorizationCode($tokenEndpoint, [
 			'code' => $code,
-			'redirect_uri' => $redirectUri,
+			'redirect_uri' => $redirectUrl,
 			'client_id' => $clientIdForRequest($request),
 			'code_verifier' => $storedCodeVerifier
 		])['response'];
