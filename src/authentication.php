@@ -9,7 +9,6 @@ use Guzzle;
 use DateTime;
 use Exception;
 
-
 class IndieauthHelpers {
 	protected $app;
 

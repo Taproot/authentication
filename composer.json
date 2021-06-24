@@ -1,4 +1,5 @@
 {
+	"abandoned": "taproot/indieauth",
 	"name": "taproot/authentication",
 	"description": "Makes adding indieauth login (client app) and token generation (server app) to your Silex/Symfony app as easy as it should be.",
 	"license": "MIT",

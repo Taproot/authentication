@@ -1,3 +1,7 @@
+<h1 style="font-color: #700101;">Abandoned!</h1>
+
+taproot/authentication is deprecated and no longer maintainted. Future development will happen in the newer, more compatible and better tested [taproot/indieauth](https://github.com/Taproot/indieauth)
+
 # taproot/authentication
 
 A library for quickly adding full-blown [indieauth](http://indieauth.com)/web sign-in support to Silex/Symfony applications. Built on top of [indieweb/indieauth-client](https://github.com/indieweb/indieauth-client-php).
